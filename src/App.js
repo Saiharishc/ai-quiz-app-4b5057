@@ -5,110 +5,173 @@ function App() {
   const [topics, setTopics] = useState([]);
   const [selectedTopic, setSelectedTopic] = useState(null);
   const [quiz, setQuiz] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
   const [answers, setAnswers] = useState({});
-  const [results, setResults] = useState(null);
+  const [revealed, setRevealed] = useState({});
 
   useEffect(() => {
     fetch('/api/topics')
-      .then(res => res.json())
-      .then(data => setTopics(data))
-      .catch(err => console.error('Error fetching topics:', err));
+      .then((res) => res.json())
+      .then((data) => setTopics(data))
+      .catch(() => setError('Could not load topics. Please refresh the page.'));
   }, []);
 
   const handleTopicSelect = (topic) => {
     setSelectedTopic(topic);
-    fetch(`/api/quiz/${topic}`)
-      .then(res => res.json())
-      .then(data => {
+    setLoading(true);
+    setError(null);
+    setAnswers({});
+    setRevealed({});
+
+    fetch(`/api/quiz/${encodeURIComponent(topic)}`)
+      .then((res) => res.json())
+      .then((data) => {
         setQuiz(data);
-        setAnswers({});
-        setResults(null);
+        setLoading(false);
       })
-      .catch(err => console.error(`Error fetching quiz for ${topic}:`, err));
+      .catch(() => {
+        setError('Could not load quiz questions. Please try again.');
+        setLoading(false);
+      });
   };
 
-  const handleAnswerChange = (questionIndex, selectedOption) => {
-    setAnswers({
-      ...answers,
-      [questionIndex]: selectedOption
-    });
+  const handleSelectOption = (questionIndex, option) => {
+    if (revealed[questionIndex]) return;
+    setAnswers((prev) => ({ ...prev, [questionIndex]: option }));
+    setRevealed((prev) => ({ ...prev, [questionIndex]: true }));
   };
 
-  const handleSubmitQuiz = () => {
-    fetch('/api/quiz/submit', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ topic: selectedTopic, answers: answers }),
-    })
-      .then(res => res.json())
-      .then(data => setResults(data))
-      .catch(err => console.error('Error submitting quiz:', err));
+  const allAnswered = quiz.length > 0 && quiz.every((_, i) => answers[i] !== undefined);
+  const score = quiz.reduce(
+    (acc, q, i) => acc + (answers[i] === q.correct_answer ? 1 : 0),
+    0
+  );
+
+  const handleReset = () => {
+    setSelectedTopic(null);
+    setQuiz([]);
+    setAnswers({});
+    setRevealed({});
   };
 
   return (
-    <div className="App">
-      <h1>AI Quiz App</h1>
-
-      {!selectedTopic && (
-        <div>
-          <h2>Select a Topic</h2>
-          <ul>
-            {topics.map((topic, index) => (
-              <li key={index}>
-                <button onClick={() => handleTopicSelect(topic)}>{topic}</button>
-              </li>
-            ))}
-          </ul>
+    <div className="app-shell">
+      <header className="app-header">
+        <div className="app-header-inner">
+          <span className="logo-badge">AI</span>
+          <div>
+            <h1>Generative AI Interview Quiz</h1>
+            <p className="subtitle">Fresh, live-generated questions for your next AI interview</p>
+          </div>
         </div>
-      )}
+      </header>
 
-      {selectedTopic && !results && (
-        <div>
-          <h2>Quiz on {selectedTopic}</h2>
-          {quiz.map((q, index) => (
-            <div key={index} className="question-block">
-              <h3>{q.question}</h3>
-              {q.options && (
-                <div className="options-container">
-                  {q.options.map((option, optionIndex) => (
-                    <label key={optionIndex}>
-                      <input
-                        type="radio"
-                        name={`question-${index}`}
-                        value={option}
-                        checked={answers[index] === option}
-                        onChange={() => handleAnswerChange(index, option)}
-                      />
-                      {option}
-                    </label>
-                  ))}
-                </div>
+      <main className="app-main">
+        {!selectedTopic && (
+          <section className="topic-picker">
+            <h2>Choose a topic to start</h2>
+            <div className="topic-grid">
+              {topics.length === 0 && !error && (
+                <p className="muted">Loading topics…</p>
+              )}
+              {topics.map((topic) => (
+                <button
+                  key={topic}
+                  className="topic-card"
+                  onClick={() => handleTopicSelect(topic)}
+                >
+                  <span className="topic-name">{topic}</span>
+                  <span className="topic-arrow">→</span>
+                </button>
+              ))}
+            </div>
+            {error && <p className="error-banner">{error}</p>}
+          </section>
+        )}
+
+        {selectedTopic && (
+          <section className="quiz-section">
+            <div className="quiz-toolbar">
+              <button className="link-button" onClick={handleReset}>
+                ← Back to topics
+              </button>
+              <h2>{selectedTopic}</h2>
+              {quiz.length > 0 && (
+                <span className="progress-pill">
+                  {Object.keys(answers).length} / {quiz.length} answered
+                </span>
               )}
             </div>
-          ))}
-          <button onClick={handleSubmitQuiz} disabled={quiz.length === 0}>Submit Answers</button>
-        </div>
-      )}
 
-      {results && (
-        <div>
-          <h2>Quiz Results</h2>
-          <p>Score: {results.score} / {quiz.length}</p>
-          <h3>Explanations:</h3>
-          {results.explanations.map((explanation, index) => (
-            <div key={index} className="explanation-block">
-              <h4>Question {index + 1}:</h4>
-              <p>Your Answer: {answers[index] || 'Not answered'}</p>
-              <p>Correct Answer: {quiz[index].correct_answer}</p>
-              <p><strong>Explanation:</strong> {explanation}</p>
-              {explanation.source && <p><em>Source: {explanation.source}</em></p>}
-            </div>
-          ))}
-          <button onClick={() => setSelectedTopic(null)}>Choose Another Topic</button>
-        </div>
-      )}
+            {loading && <p className="muted">Generating your quiz…</p>}
+            {error && <p className="error-banner">{error}</p>}
+
+            {!loading &&
+              quiz.map((q, index) => {
+                const userAnswer = answers[index];
+                const isRevealed = !!revealed[index];
+                const isCorrect = userAnswer === q.correct_answer;
+
+                return (
+                  <div key={index} className="question-card">
+                    <div className="question-header">
+                      <span className="question-number">Q{index + 1}</span>
+                      <h3>{q.question}</h3>
+                    </div>
+
+                    <div className="options-grid">
+                      {q.options &&
+                        q.options.map((option) => {
+                          let optionClass = 'option-button';
+                          if (isRevealed) {
+                            if (option === q.correct_answer) {
+                              optionClass += ' option-correct';
+                            } else if (option === userAnswer) {
+                              optionClass += ' option-incorrect';
+                            } else {
+                              optionClass += ' option-disabled';
+                            }
+                          }
+                          return (
+                            <button
+                              key={option}
+                              className={optionClass}
+                              onClick={() => handleSelectOption(index, option)}
+                              disabled={isRevealed}
+                            >
+                              {option}
+                            </button>
+                          );
+                        })}
+                    </div>
+
+                    {isRevealed && (
+                      <div className={`explanation-panel ${isCorrect ? 'is-correct' : 'is-incorrect'}`}>
+                        <div className="explanation-result">
+                          {isCorrect ? '✓ Correct' : `✗ Correct answer: ${q.correct_answer}`}
+                        </div>
+                        <p className="explanation-text">{q.explanation}</p>
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+
+            {!loading && quiz.length > 0 && allAnswered && (
+              <div className="score-summary">
+                <h3>Your score</h3>
+                <p className="score-value">
+                  {score} / {quiz.length}
+                </p>
+                <button className="primary-button" onClick={handleReset}>
+                  Try another topic
+                </button>
+              </div>
+            )}
+          </section>
+        )}
+      </main>
     </div>
   );
 }
