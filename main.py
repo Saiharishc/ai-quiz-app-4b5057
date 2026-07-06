@@ -14,14 +14,6 @@ if os.path.isdir("frontend/build") and os.path.isdir("frontend/build/static"):
 else:
     print("Warning: 'frontend/build/static' directory not found. Static file serving might not work.")
 
-# Fallback for serving the React app's index.html
-@app.get("/{full_path:path}")
-async def serve_frontend(full_path: str = ""):
-    # Ensure frontend/build exists before attempting to serve index.html
-    if os.path.isdir("frontend/build") and not full_path.startswith("api/"):
-        return FileResponse("frontend/build/index.html")
-    raise HTTPException(status_code=404, detail="Not Found")
-
 @app.get("/api/topics")
 async def get_topics():
     # In a real app, this would fetch from a database or configuration.
@@ -118,3 +110,11 @@ async def submit_quiz(submission: dict):
         "total_questions": len(quiz_questions),
         "explanations": explanations
     }
+
+# Fallback for serving the React app's index.html
+@app.get("/{full_path:path}")
+async def serve_frontend(full_path: str = ""):
+    # Ensure frontend/build exists before attempting to serve index.html
+    if os.path.isdir("frontend/build") and not full_path.startswith("api/"):
+        return FileResponse("frontend/build/index.html")
+    raise HTTPException(status_code=404, detail="Not Found")
