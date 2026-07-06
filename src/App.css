@@ -1,0 +1,93 @@
+.App {
+  text-align: center;
+  padding: 20px;
+}
+
+.App h1 {
+  color: #333;
+}
+
+.App h2 {
+  margin-top: 30px;
+  color: #555;
+}
+
+.App ul {
+  list-style: none;
+  padding: 0;
+}
+
+.App li {
+  margin: 10px 0;
+}
+
+.App button {
+  padding: 10px 15px;
+  font-size: 16px;
+  cursor: pointer;
+  background-color: #007bff;
+  color: white;
+  border: none;
+  border-radius: 5px;
+  transition: background-color 0.3s ease;
+}
+
+.App button:hover {
+  background-color: #0056b3;
+}
+
+.App button:disabled {
+  background-color: #cccccc;
+  cursor: not-allowed;
+}
+
+.question-block {
+  margin-top: 20px;
+  padding: 15px;
+  border: 1px solid #eee;
+  border-radius: 8px;
+  background-color: #f9f9f9;
+  text-align: left;
+}
+
+.question-block h3 {
+  margin-top: 0;
+  color: #444;
+}
+
+.options-container label {
+  display: block;
+  margin-bottom: 10px;
+  font-size: 14px;
+  color: #666;
+}
+
+.options-container input[type="radio"] {
+  margin-right: 10px;
+}
+
+.explanation-block {
+  margin-top: 15px;
+  padding: 10px;
+  border-left: 4px solid #28a745;
+  background-color: #e9ecef;
+}
+
+.explanation-block h4 {
+  margin-bottom: 5px;
+  color: #0056b3;
+}
+
+.explanation-block p {
+  margin-bottom: 8px;
+  color: #333;
+}
+
+.explanation-block strong {
+  color: #17a2b8;
+}
+
+.explanation-block em {
+  font-size: 0.9em;
+  color: #6c757d;
+}
