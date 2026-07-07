@@ -77,6 +77,40 @@ async def get_quiz(topic: str):
     quiz_data = await generate_content_with_llm(prompt)
     return quiz_data
 
+@app.get("/api/flashcards/concepts/topics")
+async def get_concept_flashcard_topics():
+    return [
+        "Transformers and Attention",
+        "Retrieval-Augmented Generation",
+        "Fine-tuning vs Prompt Engineering",
+        "AI Agents and Tool Use",
+        "Embeddings and Vector Search",
+        "Model Evaluation and Guardrails"
+    ]
+
+@app.get("/api/flashcards/code/topics")
+async def get_code_flashcard_topics():
+    return [
+        "FastAPI Basics",
+        "FastAPI Async and Dependencies",
+        "Python Fundamentals",
+        "React Hooks",
+        "React Component Patterns",
+        "Calling LLM APIs from Python"
+    ]
+
+@app.get("/api/flashcards/concepts/{topic}")
+async def get_concept_flashcards(topic: str):
+    prompt = f"Generate 6 flashcards that teach the AI concept '{topic}' to someone preparing for a Generative AI / Agentic AI engineering interview. Each flashcard should have a short front-side title/term and a clear, concise back-side explanation (2-4 sentences). Respond as a JSON array of {{title: str, explanation: str}}."
+    cards = await generate_content_with_llm(prompt)
+    return cards
+
+@app.get("/api/flashcards/code/{topic}")
+async def get_code_flashcards(topic: str):
+    prompt = f"Generate 6 flashcards that teach '{topic}' (a Python, FastAPI, or React concept) with a practical code snippet. Each flashcard should have a short front-side title, a back-side code snippet (as a string, using \\n for newlines), and a brief explanation of what the snippet demonstrates. Respond as a JSON array of {{title: str, snippet: str, explanation: str}}."
+    cards = await generate_content_with_llm(prompt)
+    return cards
+
 @app.post("/api/quiz/submit")
 async def submit_quiz(submission: dict):
     topic = submission.get("topic")
